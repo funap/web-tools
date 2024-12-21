@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Charactor to Icon Generator</title>
+        <style>
+            body {
+                font-family: "Segoe UI", Arial, sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 40px;
+                background: linear-gradient(135deg, #f6f8fa 0%, #e9ecef 100%);
+                color: #2c3e50;
+                min-height: 100vh;
+            }
+            .container {
+                background: white;
+                border-radius: 16px;
+                padding: 40px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                gap: 40px;
+            }
+            h1 {
+                margin: 0;
+                font-size: 3em;
+                color: #2c3e50;
+                text-align: center;
+                font-weight: 700;
+                letter-spacing: -0.5px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            }
+            .preview-container {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 30px;
+                margin-top: 30px;
+                padding: 30px;
+                background: #f8f9fa;
+                border-radius: 12px;
+                border: 1px solid #e9ecef;
+            }
+            #preview-grid {
+                display: flex;
+                flex-direction: row;
+                gap: 30px;
+            }
+            .preview-icon {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+                transition: all 0.3s ease;
+                flex: 0 0 auto;
+            }
+            .preview-icon:hover {
+                transform: scale(1.05);
+                filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
+            }
+            .preview-frame {
+                border: 2px solid #e9ecef;
+                border-radius: 12px;
+                padding: 20px;
+                position: relative;
+                background: white;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                transition: all 0.3s ease;
+            }
+            .preview-frame:hover {
+                border-color: #3498db;
+                box-shadow: 0 6px 12px rgba(52, 152, 219, 0.15);
+            }
+            .preview-frame::before {
+                content: "";
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+                border: 1px dashed #e9ecef;
+                pointer-events: none;
+            }
+            .controls {
+                display: flex;
+                flex-direction: column;
+                gap: 30px;
+                background: #f8f9fa;
+                padding: 30px;
+                border-radius: 12px;
+                border: 1px solid #e9ecef;
+            }
+            .input-group {
+                display: flex;
+                gap: 16px;
+                align-items: center;
+            }
+            input,
+            select {
+                padding: 12px 16px;
+                border: 2px solid #e9ecef;
+                border-radius: 8px;
+                font-size: 15px;
+                transition: all 0.3s ease;
+                background: white;
+            }
+            input:hover,
+            select:hover {
+                border-color: #3498db;
+            }
+            input:focus,
+            select:focus {
+                outline: none;
+                border-color: #3498db;
+                box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+            }
+            button {
+                padding: 14px 28px;
+                background: #3498db;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+            }
+            button:hover {
+                background: #2980b9;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+            }
+            button:disabled {
+                background: #bdc3c7;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+            .loading {
+                display: none;
+                color: #666;
+                font-weight: 500;
+            }
+            .size-label {
+                text-align: center;
+                color: #666;
+                font-size: 0.95em;
+                font-weight: 500;
+            }
+            p {
+                margin: 0;
+                font-weight: 500;
+                color: #2c3e50;
+                font-size: 1.1em;
+            }
+            input[type="color"] {
+                width: 60px;
+                height: 45px;
+                padding: 0;
+                border: 2px solid #e9ecef;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+            input[type="color"]:hover {
+                border-color: #3498db;
+            }
+            .size-checkboxes {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-top: 12px;
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e9ecef;
+            }
+            .size-row {
+                display: flex;
+                gap: 12px;
+                width: 100%;
+            }
+            .size-checkboxes label {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-width: 80px;
+            }
+            .size-checkboxes label:hover {
+                color: #3498db;
+            }
+            .preset-select {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Charactor to Icon Generator</h1>
+
+            <div class="controls">
+                <p>
+                    1. Select Font:
+                    <select id="fontSelect" onchange="onFontChange(); generatePreviews();">
+                        <option value="Arial" selected>Arial</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Impact">Impact</option>
+                        <option value="Comic Sans MS">Comic Sans MS</option>
+                        <option value="Trebuchet MS">Trebuchet MS</option>
+                        <option value="Arial Black">Arial Black</option>
+                        <option value="MS Gothic">MS Gothic</option>
+                        <option value="MS Mincho">MS Mincho</option>
+                        <option value="Yu Gothic">Yu Gothic</option>
+                        <option value="Meiryo">Meiryo</option>
+                    </select>
+                    <span>or</span>
+                    <input
+                        type="file"
+                        id="fontFile"
+                        accept=".ttf,.otf"
+                        onchange="onFontLoaded(); generatePreviews();"
+                    />
+                </p>
+                <p class="input-group">
+                    2. Input Charactor:
+                    <select id="inputType" onchange="onInputChange(); generatePreviews();">
+                        <option value="char">Character</option>
+                        <option value="unicode">Unicode Point</option>
+                    </select>
+                    <input
+                        type="text"
+                        id="charInput"
+                        value="A"
+                        maxlength="1"
+                        oninput="generatePreviews(); updateDownloadButton();"
+                    />
+                    <input
+                        type="text"
+                        id="unicodeInput"
+                        placeholder="Unicode (e.g., 0061)"
+                        style="display: none"
+                        oninput="generatePreviews(); updateDownloadButton();"
+                    />
+                    <input
+                        type="color"
+                        id="textColor"
+                        value="#333333"
+                        onchange="generatePreviews();"
+                    />
+                </p>
+
+                <p>
+                    3. Select Sizes:
+                    <select id="presetSelect" class="preset-select" onchange="selectPreset(); generatePreviews();">
+                        <option value="">Custom Selection</option>
+                        <option value="context-menu">Context menu, title bar, system tray (16-64px)</option>
+                        <option value="taskbar">Taskbar, search results, Start all apps list (24-96px)</option>
+                        <option value="start-pins">Start pins (32-256px)</option>
+                    </select>
+                    <div class="size-checkboxes" id="sizeCheckboxes">
+                        <div class="size-row">
+                            <label><input type="checkbox" value="16" checked onchange="generatePreviews();"> 16x16</label>
+                            <label><input type="checkbox" value="20" checked onchange="generatePreviews();"> 20x20</label>
+                            <label><input type="checkbox" value="24" checked onchange="generatePreviews();"> 24x24</label>
+                            <label><input type="checkbox" value="30" checked onchange="generatePreviews();"> 30x30</label>
+                            <label><input type="checkbox" value="32" checked onchange="generatePreviews();"> 32x32</label>
+                        </div>
+                        <div class="size-row">
+                            <label><input type="checkbox" value="36" checked onchange="generatePreviews();"> 36x36</label>
+                            <label><input type="checkbox" value="40" checked onchange="generatePreviews();"> 40x40</label>
+                            <label><input type="checkbox" value="48" checked onchange="generatePreviews();"> 48x48</label>
+                            <label><input type="checkbox" value="60" checked onchange="generatePreviews();"> 60x60</label>
+                            <label><input type="checkbox" value="64" checked onchange="generatePreviews();"> 64x64</label>
+                        </div>
+                        <div class="size-row">
+                            <label><input type="checkbox" value="72" checked onchange="generatePreviews();"> 72x72</label>
+                            <label><input type="checkbox" value="80" checked onchange="generatePreviews();"> 80x80</label>
+                            <label><input type="checkbox" value="96" checked onchange="generatePreviews();"> 96x96</label>
+                            <label><input type="checkbox" value="128" checked onchange="generatePreviews();"> 128x128</label>
+                            <label><input type="checkbox" value="256" checked onchange="generatePreviews();"> 256x256</label>
+                        </div>
+                    </div>
+                </p>
+
+                <p>
+                    <button id="downloadButton" onclick="downloadIcon()">Download ICO</button>
+                    <span id="loading" class="loading">Processing...</span>
+                </p>
+            </div>
+
+            <div id="previewContainer" class="preview-container">
+                <div id="preview-grid"></div>
+            </div>
+        </div>
+
+        <script>
+            const presets = {
+                'context-menu': [16, 20, 24, 32, 40, 48, 64],
+                'taskbar': [24, 30, 36, 48, 60, 72, 96],
+                'start-pins': [32, 40, 48, 64, 80, 96, 256]
+            };
+
+            function updateDownloadButton() {
+                const char = getInputCharacter();
+                const downloadButton = document.getElementById('downloadButton');
+                downloadButton.disabled = !char;
+            }
+
+            function selectPreset() {
+                const preset = document.getElementById('presetSelect').value;
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+                if (preset === '') {
+                    checkboxes.forEach(cb => cb.checked = true);
+                    return;
+                }
+
+                const selectedSizes = presets[preset];
+                checkboxes.forEach(cb => {
+                    cb.checked = selectedSizes.includes(parseInt(cb.value));
+                });
+            }
+
+            let loadedFont = "Arial";
+            let currentCanvases = [];
+
+            function getSelectedSizes() {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                return Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => parseInt(cb.value));
+            }
+
+            function onFontChange() {
+                const selectedFont =
+                    document.getElementById("fontSelect").value;
+                if (selectedFont) {
+                    loadedFont = selectedFont;
+                }
+            }
+
+            async function onFontLoaded() {
+                const fontFile = document.getElementById("fontFile").files[0];
+                if (fontFile) {
+                    const font = await loadFont(fontFile);
+                    // Add custom font to select
+                    const fontSelect = document.getElementById("fontSelect");
+                    const option = document.createElement("option");
+                    option.value = font.family;
+                    option.text = font.family;
+                    fontSelect.add(option);
+                    fontSelect.value = font.family;
+                }
+            }
+
+            function onInputChange() {
+                const charInput = document.getElementById("charInput");
+                const unicodeInput = document.getElementById("unicodeInput");
+                if (event.target.value === "char") {
+                    charInput.style.display = "";
+                    unicodeInput.style.display = "none";
+                } else {
+                    charInput.style.display = "none";
+                    unicodeInput.style.display = "";
+                }
+                updateDownloadButton();
+            }
+
+            async function loadFont(file) {
+                const font = new FontFace(
+                    file.name.split('.')[0],
+                    await file.arrayBuffer(),
+                );
+                await font.load();
+                document.fonts.add(font);
+                loadedFont = font.family;
+                return font;
+            }
+
+            function createIconCanvas(size, char, color) {
+                const canvas = document.createElement("canvas");
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext("2d");
+
+                ctx.clearRect(0, 0, size, size);
+                ctx.fillStyle = color;
+                ctx.font = `${Math.floor(size * 0.95)}px "${loadedFont}"`;
+
+                const metrics = ctx.measureText(char);
+                const ascent = metrics.actualBoundingBoxAscent;
+                const descent = metrics.actualBoundingBoxDescent;
+                const height = ascent + descent;
+
+                const yPos = (size - height) / 2 + ascent;
+
+                ctx.textAlign = "center";
+                ctx.fillText(char, size / 2, yPos);
+
+                return canvas;
+            }
+
+            function getInputCharacter() {
+                const inputType = document.getElementById("inputType").value;
+                if (inputType === "char") {
+                    const char = document.getElementById("charInput").value;
+                    if (!char) {
+                        return null;
+                    }
+                    return char;
+                } else {
+                    const unicodeInput =
+                        document.getElementById("unicodeInput").value;
+                    if (!unicodeInput) {
+                        return null;
+                    }
+                    return String.fromCodePoint(parseInt(unicodeInput, 16));
+                }
+            }
+
+            async function generatePreviews() {
+                if (!loadedFont) {
+                    return;
+                }
+
+                try {
+                    const char = getInputCharacter();
+                    if (!char) return;
+
+                    const color = document.getElementById("textColor").value;
+                    const selectedSizes = getSelectedSizes();
+                    const previewGrid = document.getElementById("preview-grid");
+
+                    previewGrid.innerHTML = "";
+                    currentCanvases = [];
+
+                    selectedSizes.forEach((size) => {
+                        const canvas = createIconCanvas(size, char, color);
+                        currentCanvases.push(canvas);
+
+                        const wrapper = document.createElement("div");
+                        wrapper.className = "preview-icon";
+
+                        const frame = document.createElement("div");
+                        frame.className = "preview-frame";
+                        frame.appendChild(canvas);
+
+                        const sizeLabel = document.createElement("div");
+                        sizeLabel.className = "size-label";
+                        sizeLabel.textContent = `${size}×${size}`;
+
+                        wrapper.appendChild(frame);
+                        wrapper.appendChild(sizeLabel);
+                        previewGrid.appendChild(wrapper);
+                    });
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            async function createICO(canvases) {
+                const header = new Uint8Array([0, 0, 1, 0, canvases.length, 0]);
+
+                let offset = 6 + 16 * canvases.length;
+                const directories = [];
+                const imageData = [];
+
+                for (const canvas of canvases) {
+                    const blob = await new Promise((resolve) =>
+                        canvas.toBlob(resolve, "png"),
+                    );
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const data = new Uint8Array(arrayBuffer);
+
+                    const directory = new Uint8Array([
+                        canvas.width,
+                        canvas.height,
+                        0,
+                        0,
+                        1,
+                        0,
+                        32,
+                        0,
+                        data.length & 0xff,
+                        (data.length >> 8) & 0xff,
+                        (data.length >> 16) & 0xff,
+                        (data.length >> 24) & 0xff,
+                        offset & 0xff,
+                        (offset >> 8) & 0xff,
+                        (offset >> 16) & 0xff,
+                        (offset >> 24) & 0xff,
+                    ]);
+
+                    directories.push(directory);
+                    imageData.push(data);
+                    offset += data.length;
+                }
+
+                const totalSize = offset;
+                const ico = new Uint8Array(totalSize);
+                let pos = 0;
+
+                ico.set(header, pos);
+                pos += header.length;
+
+                for (const directory of directories) {
+                    ico.set(directory, pos);
+                    pos += directory.length;
+                }
+
+                for (const data of imageData) {
+                    ico.set(data, pos);
+                    pos += data.length;
+                }
+
+                return ico;
+            }
+
+            async function downloadIcon() {
+                if (!currentCanvases.length) {
+                    alert("Please generate previews first");
+                    return;
+                }
+
+                const loading = document.getElementById("loading");
+                loading.style.display = "inline";
+
+                try {
+                    const icoData = await createICO(currentCanvases);
+                    const blob = new Blob([icoData], { type: "image/x-icon" });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "icon.ico";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error("Error creating ICO:", error);
+                    alert("Error creating ICO file");
+                } finally {
+                    loading.style.display = "none";
+                }
+            }
+
+            // Initialize with default values
+            window.onload = function() {
+                generatePreviews();
+            };
+        </script>
+    </body>
+</html>
