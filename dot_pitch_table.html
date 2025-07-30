@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dot Pitch Lists</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --card-bg-color: #ffffff;
+            --text-color: #334155;
+            --heading-color: #0f172a;
+            --border-color: #e2e8f0;
+            --grid-color: #cbd5e1;
+            --accent-color: #3b82f6;
+            --shadow-color: rgba(149, 157, 165, 0.1);
+            --font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg-color: #1e293b;
+            --text-color: #cbd5e1;
+            --heading-color: #f1f5f9;
+            --border-color: #334155;
+            --grid-color: #475569;
+            --accent-color: #60a5fa;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 2rem;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--heading-color);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .theme-switcher {
+            margin-top: 1.5rem;
+        }
+
+        #theme-toggle {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg-color);
+            color: var(--text-color);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #theme-toggle:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .chart-container {
+            background: var(--card-bg-color);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 24px var(--shadow-color);
+            margin-bottom: 2rem;
+            transition: background-color 0.3s;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 600px;
+        }
+
+        .chart {
+            position: relative;
+            width: calc(100% - 80px);
+            height: calc(100% - 80px);
+            margin: 60px 0 0 70px;
+            border-left: 2px solid var(--border-color);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .y-axis, .x-axis {
+            position: absolute;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .y-axis {
+            left: -10px;
+            top: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .x-axis {
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .axis-label {
+            position: absolute;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+
+        .y-label {
+            left: -150px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+        }
+
+        .x-label {
+            bottom: -90px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .grid-line {
+            position: absolute;
+            background: var(--grid-color);
+            opacity: 0.5;
+        }
+
+        .grid-line.horizontal { width: 100%; height: 1px; left: 0; }
+        .grid-line.vertical { width: 1px; height: 100%; top: 0; }
+
+        .data-point {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            border: 1px solid var(--card-bg-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            opacity: 0;
+            animation: fadeInScale 0.5s ease-out forwards;
+            animation-delay: calc(var(--i) * 10ms);
+            border-radius: 2px;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .data-point.aspect-16-9 { width: 16px; height: 9px; }
+        .data-point.aspect-16-10 { width: 16px; height: 10px; }
+        .data-point.aspect-21-9 { width: 21px; height: 9px; }
+
+        .data-point:hover {
+            transform: translate(-50%, -50%) scale(1.5);
+            z-index: 20;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .data-point.aspect-21-9:hover { transform: translate(-50%, -50%) scale(1.5); }
+
+        .data-point.hd { background: #d946ef; }
+        .data-point.fhd { background: #f97316; }
+        .data-point.qhd { background: #eab308; }
+        .data-point.uhd4k { background: #22c55e; }
+        .data-point.wuxga { background: #3b82f6; }
+        .data-point.wqxga { background: #6366f1; }
+        .data-point.uwfhd { background: #ec4899; }
+        .data-point.uwqhd { background: #14b8a6; }
+
+        .tooltip {
+            position: absolute;
+            background: #0f172a;
+            color: #f1f5f9;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 30;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateY(10px);
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            background: var(--card-bg-color);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .legend-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px var(--shadow-color);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--card-bg-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .legend-color.aspect-16-9 { width: 16px; height: 9px; }
+        .legend-color.aspect-16-10 { width: 16px; height: 10px; }
+        .legend-color.aspect-21-9 { width: 21px; height: 9px; }
+        
+        .legend-group-header {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--heading-color);
+            margin: 1rem 0 0.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .header h1 { font-size: 2rem; }
+            .chart-wrapper { height: 500px; }
+            .chart { margin: 50px 0 0 60px; }
+            .legend { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Dot Pitch Scatter Plot</h1>
+            <p>Visualizing the relationship between display size and dot pitch</p>
+            <div class="theme-switcher">
+                <button id="theme-toggle">Change Theme</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <div class="chart" id="chart">
+                    <div class="axis-label y-label">Dot Pitch (mm)</div>
+                    <div class="axis-label x-label">Display Size (inches)</div>
+                    <div class="y-axis" id="yAxis"></div>
+                    <div class="x-axis" id="xAxis"></div>
+                </div>
+                <div class="tooltip" id="tooltip"></div>
+            </div>
+        </div>
+
+        <div class="legend" id="legend"></div>
+    </div>
+
+    <script>
+        const sizes = [13.3, 15.6, 17, 18, 21.5, 24, 27, 29, 32, 34, 37.5, 42.5];
+        const resolutions = [
+            { name: "HD", fullName: "HD (1366×768)", width: 1366, height: 768, class: "hd", color: "#ef4444", aspect: "16:9" },
+            { name: "FHD", fullName: "Full HD (1920×1080)", width: 1920, height: 1080, class: "fhd", color: "#f97316", aspect: "16:9" },
+            { name: "QHD", fullName: "QHD (2560×1440)", width: 2560, height: 1440, class: "qhd", color: "#eab308", aspect: "16:9" },
+            { name: "4K UHD", fullName: "4K UHD (3840×2160)", width: 3840, height: 2160, class: "uhd4k", color: "#22c55e", aspect: "16:9" },
+            { name: "WUXGA", fullName: "WUXGA (1920×1200)", width: 1920, height: 1200, class: "wuxga", color: "#3b82f6", aspect: "16:10" },
+            { name: "WQXGA", fullName: "WQXGA (2560×1600)", width: 2560, height: 1600, class: "wqxga", color: "#6366f1", aspect: "16:10" },
+            { name: "UWFHD", fullName: "Ultrawide FHD (2560×1080)", width: 2560, height: 1080, class: "uwfhd", color: "#8b5cf6", aspect: "21:9" },
+            { name: "UWQHD", fullName: "Ultrawide QHD (3440×1440)", width: 3440, height: 1440, class: "uwqhd", color: "#ec4899", aspect: "21:9" },
+        ];
+
+        function calculateDotPitch(diagonal, width, height) {
+            const diagonalPixels = Math.sqrt(width * width + height * height);
+            return (diagonal * 25.4) / diagonalPixels;
+        }
+
+        function generateDataPoints() {
+            const dataPoints = [];
+            resolutions.forEach(resolution => {
+                sizes.forEach(size => {
+                    const dotPitch = calculateDotPitch(size, resolution.width, resolution.height);
+                    dataPoints.push({ size, dotPitch, resolution });
+                });
+            });
+            return dataPoints;
+        }
+
+        function drawChart() {
+            const chart = document.getElementById('chart');
+            const tooltip = document.getElementById('tooltip');
+            const dataPoints = generateDataPoints();
+            
+            const dotPitches = dataPoints.map(p => p.dotPitch);
+            const minSize = Math.min(...sizes);
+            const maxSize = Math.max(...sizes);
+            const minDotPitch = Math.floor(Math.min(...dotPitches) * 100) / 100;
+            const maxDotPitch = 0.3;//Math.ceil(Math.max(...dotPitches) * 100) / 100;
+
+            drawGridLines(chart, minSize, maxSize, minDotPitch, maxDotPitch);
+            drawAxisLabels(minSize, maxSize, minDotPitch, maxDotPitch);
+            
+            dataPoints.forEach((point, index) => {
+                const x = ((point.size - minSize) / (maxSize - minSize)) * 100;
+                const y = 100 - ((point.dotPitch - minDotPitch) / (maxDotPitch - minDotPitch)) * 100;
+                
+                if (y < 0 || y > 100) return;
+
+                const pointElement = document.createElement('div');
+                pointElement.className = `data-point ${point.resolution.class} aspect-${point.resolution.aspect.replace(':', '-')}`;
+                pointElement.style.left = `${x}%`;
+                pointElement.style.top = `${y}%`;
+                pointElement.style.setProperty('--i', index);
+                pointElement.style.backgroundColor = point.resolution.color;
+                
+                pointElement.addEventListener('mouseenter', (e) => {
+                    tooltip.innerHTML = `
+                        <strong>${point.resolution.fullName}</strong><br>
+                        Aspect Ratio: ${point.resolution.aspect}<br>
+                        Size: ${point.size} inches<br>
+                        Dot Pitch: ${point.dotPitch.toFixed(3)}mm
+                    `;
+                    tooltip.classList.add('show');
+                });
+                
+                pointElement.addEventListener('mousemove', (e) => {
+                    const rect = chart.getBoundingClientRect();
+                    tooltip.style.left = `${e.clientX - rect.left + 20}px`;
+                    tooltip.style.top = `${e.clientY - rect.top - tooltip.offsetHeight - 10}px`;
+                });
+                
+                pointElement.addEventListener('mouseleave', () => {
+                    tooltip.classList.remove('show');
+                });
+                
+                chart.appendChild(pointElement);
+            });
+        }
+
+        function drawGridLines(chart, minSize, maxSize, minDotPitch, maxDotPitch) {
+            for (let i = 0; i <= 10; i++) {
+                const y = i * 10;
+                const hLine = document.createElement('div');
+                hLine.className = 'grid-line horizontal';
+                hLine.style.top = `${y}%`;
+                chart.appendChild(hLine);
+
+                const x = i * 10;
+                const vLine = document.createElement('div');
+                vLine.className = 'grid-line vertical';
+                vLine.style.left = `${x}%`;
+                chart.appendChild(vLine);
+            }
+        }
+
+        function drawAxisLabels(minSize, maxSize, minDotPitch, maxDotPitch) {
+            const yAxis = document.getElementById('yAxis');
+            const xAxis = document.getElementById('xAxis');
+            yAxis.innerHTML = '';
+            xAxis.innerHTML = '';
+            
+            const yValues = [0.30, 0.25, 0.20, 0.15, 0.10];
+            yValues.forEach(value => {
+                const label = document.createElement('div');
+                label.textContent = value.toFixed(3);
+                const y = 100 - ((value - minDotPitch) / (maxDotPitch - minDotPitch)) * 100;
+                label.style.position = 'absolute';
+                label.style.top = `${y}%`;
+                label.style.transform = 'translateY(-50%)';
+                yAxis.appendChild(label);
+            });
+            
+            const xValues = sizes;
+             xValues.forEach(size => {
+                const x = ((size - minSize) / (maxSize - minSize)) * 100;
+                const label = document.createElement('div');
+                label.textContent = `${size}"`;
+                label.style.position = 'absolute';
+                label.style.left = `${x}%`;
+                label.style.transform = 'translateX(-50%)';
+                xAxis.appendChild(label);
+            });
+        }
+
+        function generateLegend() {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '';
+            
+            const aspectGroups = resolutions.reduce((acc, res) => {
+                if (!acc[res.aspect]) acc[res.aspect] = [];
+                acc[res.aspect].push(res);
+                return acc;
+            }, {});
+            
+            Object.keys(aspectGroups).forEach(aspect => {
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'legend-group-header';
+                
+                groupHeader.textContent = `Aspect Ratio ${aspect}`;
+                legend.appendChild(groupHeader);
+                
+                aspectGroups[aspect].forEach(resolution => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    
+                    const color = document.createElement('div');
+                    color.className = `legend-color aspect-${aspect.replace(':', '-')}`;
+                    color.style.backgroundColor = resolution.color;
+                    
+                    const text = document.createElement('span');
+                    text.textContent = resolution.fullName;
+                    
+                    item.appendChild(color);
+                    item.appendChild(text);
+                    legend.appendChild(item);
+                });
+            });
+        }
+
+        function setupThemeSwitcher() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            let currentTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+
+            document.documentElement.setAttribute('data-theme', currentTheme);
+
+            themeToggle.addEventListener('click', () => {
+                const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupThemeSwitcher();
+            drawChart();
+            generateLegend();
+        });
+    </script>
+</body>
+</html>
