@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Unicode Character Table</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --primary-color: #4a6cf7;
+                --secondary-color: #6c757d;
+                --bg-color: #ffffff;
+                --surface-color: #f8f9fa;
+                --text-color: #212529;
+                --border-color: #e9ecef;
+                --hover-color: #f1f5ff;
+                --radius: 12px;
+                --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family:
+                    "Inter",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                padding: 30px;
+                background-color: var(--bg-color);
+                color: var(--text-color);
+                line-height: 1.6;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            h1 {
+                text-align: center;
+                margin-bottom: 30px;
+                font-weight: 700;
+                color: var(--text-color);
+                font-size: 2.2rem;
+            }
+
+            .controls {
+                margin-bottom: 30px;
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .virtual-scroll-container {
+                height: 70vh;
+                overflow: auto;
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
+                position: relative;
+                background-color: var(--surface-color);
+                scrollbar-width: thin;
+                scroll-behavior: smooth;
+                will-change: scroll-position;
+            }
+
+            .virtual-scroll-container::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .virtual-scroll-container::-webkit-scrollbar-track {
+                background: var(--surface-color);
+            }
+
+            .virtual-scroll-container::-webkit-scrollbar-thumb {
+                background-color: var(--secondary-color);
+                border-radius: 20px;
+            }
+
+            .scroll-content {
+                position: absolute;
+                width: 100%;
+                top: 0;
+                left: 0;
+                will-change: transform;
+                contain: layout style paint;
+            }
+
+            .character-row {
+                display: flex;
+                border-bottom: 1px solid var(--border-color);
+                padding: 4px 0;
+                height: 70px; /* 高さを小さく調整 */
+                contain: layout style;
+            }
+
+            .character-cell {
+                padding: 5px;
+                flex: 1;
+                text-align: center;
+                transition: background-color 0.2s ease;
+                cursor: pointer;
+                border-radius: 8px;
+                margin: 2px;
+                contain: content;
+            }
+
+            .character-cell:hover {
+                background-color: var(--hover-color);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .char-display {
+                font-size: 14pt; /* 文字サイズを14ptに変更 */
+                min-height: 35px; /* 高さを調整 */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .char-info {
+                font-size: 0.75em; /* 情報表示も小さく */
+                color: var(--secondary-color);
+                font-weight: 500;
+                margin-top: 3px;
+            }
+
+            .search-box {
+                padding: 12px 16px;
+                width: 350px;
+                max-width: 100%;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+                font-size: 1rem;
+                outline: none;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            }
+
+            .search-box:focus {
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+            }
+
+            #status {
+                padding: 8px 16px;
+                border-radius: var(--radius);
+                background-color: var(--surface-color);
+                font-weight: 500;
+                font-size: 0.9rem;
+                color: var(--secondary-color);
+                box-shadow: var(--shadow);
+            }
+
+            .loading-bar {
+                width: 100%;
+                height: 4px;
+                background-color: #eee;
+                border-radius: 2px;
+                margin-top: 10px;
+                overflow: hidden;
+                display: none;
+            }
+
+            .loading-progress {
+                height: 100%;
+                background-color: var(--primary-color);
+                width: 0%;
+                transition: width 0.3s ease;
+            }
+
+            @media (max-width: 768px) {
+                body {
+                    padding: 15px;
+                }
+
+                .controls {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .search-box {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Unicode Character Table</h1>
+
+        <div class="controls">
+            <input
+                type="text"
+                class="search-box"
+                placeholder="Search by name or code point..."
+            />
+            <div>
+                <span id="status">Loading...</span>
+                <div class="loading-bar">
+                    <div class="loading-progress"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="virtual-scroll-container">
+            <div class="scroll-content"></div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const container = document.querySelector(
+                    ".virtual-scroll-container",
+                );
+                const content = document.querySelector(".scroll-content");
+                const searchBox = document.querySelector(".search-box");
+                const statusDisplay = document.getElementById("status");
+                const loadingBar = document.querySelector(".loading-bar");
+                const loadingProgress =
+                    document.querySelector(".loading-progress");
+
+                // Configuration
+                const BUFFER_SIZE = 100; // 増加: より多くの行をバッファリング
+                const BATCH_SIZE = 10000; // 増加: 一度により多くの文字を処理
+                const SCROLL_THROTTLE = 16; // スクロールイベントを約60fpsに制限 (16ms)
+
+                let isGridView = true; // Grid view by default
+                let rowsPerLine = 16; // 1行に16文字表示する
+                let allCharacters = [];
+                let filteredCharacters = [];
+                let visibleCharacters = [];
+                let totalHeight = 0;
+                let scrollPosition = 0;
+                let startIndex = 0;
+                let endIndex = 0;
+                let rowHeight = 0; // 行の高さを動的に計算するための変数
+                let isScrolling = false; // スクロール中かどうかを追跡
+                let lastScrollTime = 0; // 最後のスクロール処理時間
+                let rowCache = new Map(); // 行のキャッシュを保持
+
+                // Initialize by loading first batch of characters
+                initializeCharacters();
+
+                function initializeCharacters() {
+                    statusDisplay.textContent = "Loading Unicode characters...";
+                    loadingBar.style.display = "block";
+
+                    // WebWorkerを使用してバックグラウンドで文字をロード
+                    if (window.Worker) {
+                        loadCharactersWithWorker();
+                    } else {
+                        // フォールバック: メインスレッドでロード
+                        loadCharacterBatch(0, BATCH_SIZE);
+                    }
+                }
+
+                function loadCharactersWithWorker() {
+                    // インラインワーカーの作成
+                    const workerBlob = new Blob(
+                        [
+                            `
+                        self.onmessage = function(e) {
+                            const { start, count } = e.data;
+                            const end = Math.min(start + count, 0x10ffff);
+                            const characters = [];
+
+                            for (let i = start; i < end; i++) {
+                                try {
+                                    const char = String.fromCodePoint(i);
+                                    characters.push({
+                                        codePoint: i,
+                                        character: char,
+                                        hexCode: i.toString(16).toUpperCase().padStart(4, "0"),
+                                        visible: true
+                                    });
+                                } catch (e) {
+                                    console.error(\`Error creating character at code point \${i}:\`, e);
+                                }
+                            }
+
+                            self.postMessage({
+                                characters,
+                                progress: Math.floor((end / 0x10ffff) * 100),
+                                done: end >= 0x10ffff,
+                                nextStart: end
+                            });
+                        }
+                    `,
+                        ],
+                        { type: "application/javascript" },
+                    );
+
+                    const worker = new Worker(URL.createObjectURL(workerBlob));
+
+                    worker.onmessage = function (e) {
+                        const { characters, progress, done, nextStart } =
+                            e.data;
+
+                        allCharacters = allCharacters.concat(characters);
+
+                        statusDisplay.textContent = `Loading... ${progress}%`;
+                        loadingProgress.style.width = `${progress}%`;
+
+                        if (done) {
+                            statusDisplay.textContent = `Loaded ${allCharacters.length.toLocaleString()} characters`;
+                            loadingBar.style.display = "none";
+                            filteredCharacters = [...allCharacters];
+
+                            calculateRowHeight();
+                            updateLayout();
+                            render();
+
+                            // ワーカーを終了
+                            worker.terminate();
+                        } else {
+                            // 次のバッチをリクエスト
+                            worker.postMessage({
+                                start: nextStart,
+                                count: BATCH_SIZE,
+                            });
+                        }
+                    };
+
+                    // 最初のバッチをリクエスト
+                    worker.postMessage({ start: 0, count: BATCH_SIZE });
+                }
+
+                function loadCharacterBatch(start, count) {
+                    let end = Math.min(start + count, 0x10ffff);
+
+                    setTimeout(() => {
+                        for (let i = start; i < end; i++) {
+                            try {
+                                const char = String.fromCodePoint(i);
+                                allCharacters.push({
+                                    codePoint: i,
+                                    character: char,
+                                    hexCode: i
+                                        .toString(16)
+                                        .toUpperCase()
+                                        .padStart(4, "0"),
+                                    visible: true,
+                                });
+                            } catch (e) {
+                                console.error(
+                                    `Error creating character at code point ${i}:`,
+                                    e,
+                                );
+                            }
+                        }
+
+                        if (end < 0x10ffff) {
+                            const progress = Math.floor((end / 0x10ffff) * 100);
+                            statusDisplay.textContent = `Loading... ${progress}%`;
+                            loadingProgress.style.width = `${progress}%`;
+                            loadCharacterBatch(end, count);
+                        } else {
+                            statusDisplay.textContent = `Loaded ${allCharacters.length.toLocaleString()} characters`;
+                            loadingBar.style.display = "none";
+                            filteredCharacters = [...allCharacters];
+
+                            // サンプル行を作成して行の高さを測定
+                            calculateRowHeight();
+
+                            updateLayout();
+                            render();
+                        }
+                    }, 0);
+                }
+
+                function calculateRowHeight() {
+                    // スタイルから高さを取得
+                    const style = getComputedStyle(
+                        document.querySelector(".character-row") ||
+                            document.createElement("div"),
+                    );
+                    rowHeight = parseInt(style.height) || 70; // スタイルから取得できない場合はデフォルト値を使用 (70pxに変更)
+                }
+
+                function updateLayout() {
+                    rowsPerLine = 16; // Always use grid view
+                    const characterCount = filteredCharacters.length;
+                    const numRows = Math.ceil(characterCount / rowsPerLine);
+                    totalHeight = numRows * rowHeight;
+                    content.style.height = `${totalHeight}px`;
+                }
+
+                function render() {
+                    const scrollTop = container.scrollTop;
+                    scrollPosition = scrollTop;
+
+                    // Calculate which rows should be visible
+                    const visibleStartRow = Math.floor(scrollTop / rowHeight);
+                    const visibleEndRow = Math.ceil(
+                        (scrollTop + container.clientHeight) / rowHeight,
+                    );
+
+                    // Calculate buffer rows and ensure they don't go out of bounds
+                    const bufferStartRow = Math.max(
+                        0,
+                        visibleStartRow - BUFFER_SIZE,
+                    );
+                    const bufferEndRow = Math.min(
+                        Math.ceil(filteredCharacters.length / rowsPerLine),
+                        visibleEndRow + BUFFER_SIZE,
+                    );
+
+                    // Convert row indices to character indices
+                    startIndex = bufferStartRow * rowsPerLine;
+                    endIndex = Math.min(
+                        bufferEndRow * rowsPerLine,
+                        filteredCharacters.length,
+                    );
+
+                    // Extract visible characters
+                    visibleCharacters = filteredCharacters.slice(
+                        startIndex,
+                        endIndex,
+                    );
+
+                    // Position the content correctly based on the first rendered row
+                    const topPadding = bufferStartRow * rowHeight;
+                    content.style.transform = `translateY(${topPadding}px)`;
+                    content.style.top = "0";
+
+                    // Render the visible characters
+                    renderCharacters();
+                }
+
+                function renderCharacters() {
+                    // DOM操作を最小限に抑えるためのフラグメント
+                    const fragment = document.createDocumentFragment();
+
+                    // 現在の可視範囲のキーを生成
+                    const visibleKey = `${startIndex}-${endIndex}`;
+
+                    // キャッシュされた行があれば使用
+                    if (rowCache.has(visibleKey)) {
+                        content.innerHTML = "";
+                        content.appendChild(
+                            rowCache.get(visibleKey).cloneNode(true),
+                        );
+                        return;
+                    }
+
+                    // キャッシュがなければ新しく生成
+                    renderGridView(fragment);
+
+                    // DOMの更新は一度にまとめて行う
+                    content.innerHTML = "";
+                    content.appendChild(fragment);
+
+                    // キャッシュに保存（キャッシュサイズを管理するため、10個以上になったら古いものを削除）
+                    if (rowCache.size > 10) {
+                        const oldestKey = rowCache.keys().next().value;
+                        rowCache.delete(oldestKey);
+                    }
+                    rowCache.set(visibleKey, fragment.cloneNode(true));
+                }
+
+                function renderGridView(fragment) {
+                    const rows = Math.ceil(
+                        visibleCharacters.length / rowsPerLine,
+                    );
+
+                    for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+                        const row = document.createElement("div");
+                        row.className = "character-row";
+
+                        const startIdx = rowIndex * rowsPerLine;
+                        const endIdx = Math.min(
+                            startIdx + rowsPerLine,
+                            visibleCharacters.length,
+                        );
+
+                        // 各行のセルを生成
+                        for (let i = startIdx; i < endIdx; i++) {
+                            const charData = visibleCharacters[i];
+
+                            const cell = document.createElement("div");
+                            cell.className = "character-cell";
+
+                            // innerHTML代わりにDOMノードの生成を使用してパフォーマンス向上
+                            const display = document.createElement("div");
+                            display.className = "char-display";
+                            display.textContent = charData.character;
+
+                            const info = document.createElement("div");
+                            info.className = "char-info";
+                            info.textContent = `U+${charData.hexCode}`;
+
+                            cell.appendChild(display);
+                            cell.appendChild(info);
+                            row.appendChild(cell);
+                        }
+
+                        fragment.appendChild(row);
+                    }
+                }
+
+                // スクロールイベントの最適化
+                let ticking = false;
+
+                // Event listeners with throttling
+                container.addEventListener(
+                    "scroll",
+                    function () {
+                        const now = Date.now();
+
+                        // スクロールイベントをスロットル
+                        if (
+                            !ticking &&
+                            now - lastScrollTime > SCROLL_THROTTLE
+                        ) {
+                            lastScrollTime = now;
+                            requestAnimationFrame(function () {
+                                render();
+                                ticking = false;
+                            });
+                            ticking = true;
+                        }
+                    },
+                    { passive: true },
+                ); // パッシブイベントリスナーを使用
+
+                searchBox.addEventListener("input", function () {
+                    const searchTerm = this.value.toLowerCase();
+
+                    if (searchTerm.trim() === "") {
+                        filteredCharacters = [...allCharacters];
+                    } else {
+                        // ワイルドカード '*' を正規表現に変換
+                        const searchPattern = searchTerm
+                            .replace(/\*/g, ".*") // * を .* に変換
+                            .replace(/\?/g, "."); // ? を . に変換
+
+                        // 正規表現オブジェクトを作成
+                        const regex = new RegExp(searchPattern);
+
+                        filteredCharacters = allCharacters.filter((char) => {
+                            const hexCode = char.hexCode.toLowerCase();
+                            return regex.test(hexCode);
+                        });
+                    }
+
+                    // キャッシュをクリア
+                    rowCache.clear();
+
+                    // 表示を更新
+                    updateLayout();
+                    container.scrollTop = 0; // スクロール位置をリセット
+                    render();
+                    statusDisplay.textContent = `Showing ${filteredCharacters.length.toLocaleString()} characters`;
+                });
+
+                // リサイズイベントも最適化
+                let resizeTimeout;
+                window.addEventListener(
+                    "resize",
+                    function () {
+                        clearTimeout(resizeTimeout);
+                        resizeTimeout = setTimeout(function () {
+                            calculateRowHeight(); // ウィンドウサイズ変更時に行の高さを再計算
+                            rowCache.clear(); // キャッシュを無効化
+                            updateLayout();
+                            render();
+                        }, 100);
+                    },
+                    { passive: true },
+                );
+            });
+        </script>
+    </body>
+</html>
